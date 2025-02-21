@@ -1,0 +1,178 @@
+DDL commands:
+
+create schema stockPortfolioMGM;
+Defining the ENUM for stockExchange and orders table
+CREATE TYPE stockPortfolioMGM.orderTypeEnum AS ENUM ('BUY','SELL');
+CREATE TYPE stockPortfolioMGM.orderTermTypeEnum AS ENUM ('MIS', 'CNC');
+CREATE TYPE stockPortfolioMGM.orderExchangeEnum AS ENUM ('NSE', 'BSE');
+CREATE TYPE stockPortfolioMGM.productEnum AS ENUM ('REGULAR', 'AMO', 'ACEBERG');
+CREATE TYPE stockPortfolioMGM.orderMarketTypeEnum AS ENUM ('LIMIT', 'MARKET','SL','SL-M');
+create type stockPortfolioMGM.stockExchangeType as enum ('NSE','BSE');
+create type stockPortfolioMGM.orderstatusenum as enum ('OPEN','CLOSE');
+DDL command for stockPortfolioMGM.sector
+CREATE TABLE stockPortfolioMGM.sector (
+ sectorId SERIAL PRIMARY KEY NOT NULL,
+ sectorName VARCHAR(30) NOT NULL,
+ sectorMarketCap NUMERIC(10,2) NOT NULL
+);
+Creation stockPortfolio
+CREATE TABLE stockPortfolioMGM.stocks (
+ stockSk SERIAL PRIMARY KEY NOT NULL,
+ stockId INT UNIQUE NOT NULL,
+ sectorId INT NOT NULL,
+ companyName VARCHAR(50) NOT NULL,
+ symbol VARCHAR(30) NOT NULL,
+ FOREIGN KEY (sectorId) REFERENCES stockPortfolioMGM.sector(sectorId) ON DELETE CASCADE
+);
+CREATE INDEX idx_stockportfoliomgm_stocks_stocksk ON stockPortfolioMGM.stocks USING BTREE
+(stocksk);
+CREATE INDEX idx_stockportfoliomgm_stocks_stockid ON stockPortfolioMGM.stocks USING BTREE
+(stockid);
+CREATE SEQUENCE stockportfoliomgm.stockPortfoliomgm_stocks_stockId_seq;
+ALTER TABLE stockportfoliomgm.stocks
+ALTER COLUMN stockId SET DEFAULT
+nextval('stockportfoliomgm.stockPortfoliomgm_stocks_stockId_seq');
+DDL command for stockPortfolioMGM.fundamentalStocks
+CREATE TABLE stockPortfolioMGM.fundamentalStocks (
+ fsId SERIAL PRIMARY KEY NOT NULL,
+ stockId INT NOT NULL,
+ marketCap NUMERIC(10,2) NOT NULL,
+ marketCapPercentage NUMERIC(2,2) NOT NULL,
+ profitToEquityRatio NUMERIC(3,2) NOT NULL,
+ debtToEquityRatio NUMERIC(3,2) NOT NULL,
+ returnOnEquity NUMERIC(3,2) NOT NULL,
+ netProfitMargin NUMERIC(10,2) NOT NULL,
+ profitAfterTax NUMERIC(10,2) NOT NULL,
+ netRevenue NUMERIC(10,2) NOT NULL,
+ roce NUMERIC(3,2) NOT NULL,
+ priceToBookRatio NUMERIC(3,2) NOT NULL,
+ dividendYield NUMERIC(3,2),
+
+FOREIGN KEY (stockId) REFERENCES stockPortfolioMGM.stocks(stockId) ON DELETE CASCADE
+);
+CREATE INDEX idx_stockportfoliomgm_fundamental_stocks_stockId ON
+stockPortfolioMGM.fundamentalStocks USING BTREE (fsId);
+DDL command for stockPortfolioMGM.users
+userId SERIAL PRIMARY KEY NOT NULL,
+ Name VARCHAR(50) NOT NULL,
+ age INT NOT NULL,
+ username VARCHAR(30) NOT NULL,
+ userPassword VARCHAR(30) NOT NULL,
+ address VARCHAR(100) NOT NULL,
+ userDematAccNo VARCHAR(20) NOT NULL,
+ userEmailAddress VARCHAR(30) NOT NULL,
+ userMobileNumber NUMERIC(10,0),
+ userPAN VARCHAR(20) NOT NULL,
+ totalAvailableFunds NUMERIC(10,2)
+);
+CREATE INDEX idx_stockportfoliomgm_users_userId ON stockPortfolioMGM.users USING BTREE (userId);
+DDL command for stockPortfolioMGM.portfolio
+portfolioId SERIAL PRIMARY KEY NOT NULL,
+ userId INT NOT NULL,
+ description VARCHAR(100),
+ portfolioName VARCHAR(50) NOT NULL,
+ portfolioCreatedAt TIMESTAMP NOT NULL,
+ portfolioUpdatedAt TIMESTAMP NOT NULL,
+ currentBalance NUMERIC(10,2) NOT NULL,
+ profit NUMERIC(10,2) NOT NULL,
+ loss NUMERIC(10,2) NOT NULL,
+ FOREIGN KEY (userId) REFERENCES stockPortfolioMGM.users(userId) ON DELETE CASCADE
+);
+CREATE INDEX idx_stockportfoliomgm_portfolio_portfolioId ON stockPortfolioMGM.portfolio USING
+BTREE (portfolioId);
+DDL command for stockPortfolioMGM.stockExchanges
+CREATE TABLE stockPortfolioMGM.stockExchanges (
+ exchangeId SERIAL unique NOT NULL,
+ stockId INTEGER NOT NULL,
+ stockExchange stockPortfolioMGM.stockExchangeType NOT NULL,
+ PRIMARY KEY (exchangeId, stockId),
+ FOREIGN KEY (stockId) REFERENCES stockPortfolioMGM.stocks(stockId) ON DELETE CASCADE
+);
+CREATE INDEX idx_stockExchanges_exchangeId_stockId ON stockPortfolioMGM.stockExchanges USING
+BTREE (exchangeId, stockId);
+DDL command for stockPortfolioMGM.portfolioStocks
+CREATE TABLE stockPortfolioMGM.portfolioStocks (
+ portfolioStocksId SERIAL PRIMARY KEY NOT NULL,
+ portfolioId INT NOT NULL,
+ exchangeId INT NOT NULL,
+ stockId INT NOT NULL,
+ quantity INT NOT NULL,
+ averageBuyPrice NUMERIC(10,2) NOT NULL,
+ currentPrice NUMERIC(10,2) NOT NULL,
+
+profit NUMERIC(10,2) NOT NULL,
+ loss NUMERIC(10,2) NOT NULL,
+ profitPercentage NUMERIC(10,2) NOT NULL,
+ lossPercentage NUMERIC(10,2) NOT NULL,
+ investedAmount NUMERIC(10,2) NOT NULL,
+ currentAmount NUMERIC(10,2) NOT NULL,
+ FOREIGN KEY (portfolioId) REFERENCES stockPortfolioMGM.portfolio(portfolioId) ON DELETE
+CASCADE,
+ FOREIGN KEY (stockId) REFERENCES stockPortfolioMGM.stocks(stockId) ON DELETE cascade,
+ FOREIGN KEY (exchangeId, stockId) REFERENCES stockPortfolioMGM.stockExchanges(exchangeId,
+stockId) ON DELETE CASCADE
+);
+CREATE INDEX idx_portfolioStocks_portfoliostockId ON stockPortfolioMGM.portfolioStocks USING BTREE
+(portfolioStocksId);
+DDL command for stockPortfolioMGM.watchlist
+CREATE TABLE stockPortfolioMGM.watchlist (
+ watchlistId SERIAL PRIMARY KEY,
+ userId INTEGER NOT NULL ,
+ watchlistName VARCHAR(255) NOT NULL,
+ description TEXT NOT NULL,
+ watchlistCreationTime TIMESTAMP NOT NULL,
+ watchlistUpdationTime TIMESTAMP NOT NULL,
+ FOREIGN KEY (userId) REFERENCES stockPortfolioMGM.users(userId) ON DELETE CASCADE
+);
+CREATE INDEX idx_watchlist_watchlistId ON stockPortfolioMGM.watchlist USING BTREE (watchlistId);
+DDL command for stockPortfolioMGM.marketDataArchival
+CREATE TABLE stockPortfolioMGM.marketDataArchival (
+ marketArchiveId SERIAL PRIMARY KEY,
+ exchangeId INTEGER NOT NULL,
+ stockId INTEGER NOT NULL,
+ openingPrice NUMERIC(10,2) NOT NULL,
+ closingPrice NUMERIC(10,2) NOT NULL,
+ dayHighestPrice NUMERIC(10,2) NOT NULL,
+ dayLowestPrice NUMERIC(10,2) NOT NULL,
+ averageVolume NUMERIC(20,2),
+ averageBuyingVolume NUMERIC(20,2) NOT NULL,
+ averageSellingVolume NUMERIC(20,2) NOT NULL,
+ date DATE NOT NULL,
+ FOREIGN KEY (exchangeId, stockId) REFERENCES stockPortfolioMGM.stockExchanges(exchangeId,
+stockId) ON DELETE CASCADE,
+ FOREIGN KEY (stockId) REFERENCES stockPortfolioMGM.stocks(stockId) ON DELETE CASCADE
+);
+CREATE INDEX idx_marketDataArchival_marketArchiveId ON stockPortfolioMGM.marketDataArchival
+USING BTREE (marketArchiveId);
+CREATE INDEX idx_marketDataArchival_stockId ON stockPortfolioMGM.marketDataArchival USING
+BTREE (stockId);
+
+DDL command for stockPortfolioMGM.orders
+CREATE TABLE stockportfoliomgm.orders (
+ ordersk serial4 not null,
+ orderid INT NOT NULL,
+ portfolioid int4 NOT NULL,
+ exchangeid int4 NOT NULL,
+ stockid int4 NOT NULL,
+ ordertype stockportfoliomgm."ordertypeenum" NOT NULL,
+ ordertermtype stockportfoliomgm."ordertermtypeenum" NOT NULL,
+ orderexchange stockportfoliomgm."orderexchangeenum" NOT NULL,
+ marketprice numeric(10, 2) NOT NULL,
+ triggerprice numeric(10, 2) NULL,
+ stoploss numeric(10, 2) NULL,
+ product stockportfoliomgm."productenum" NOT NULL,
+ ordermarkettype stockportfoliomgm."ordermarkettypeenum" NOT NULL,
+ orderexecutionprice numeric(10, 2) NULL,
+ orderplacementdatetime timestamp NOT NULL,
+ quantity int4 NOT NULL,
+ orderstatus stockportfoliomgm."orderstatusenum" DEFAULT 'OPEN'::stockportfoliomgm.orderstatusenum
+NOT NULL,
+ CONSTRAINT orders_pkey PRIMARY KEY (ordersk,orderid),
+ CONSTRAINT orders_exchangeid_stockid_fkey FOREIGN KEY (exchangeid,stockid) REFERENCES
+stockportfoliomgm.stockexchanges(exchangeid,stockid) ON DELETE CASCADE,
+ CONSTRAINT orders_portfolioid_fkey FOREIGN KEY (portfolioid) REFERENCES
+stockportfoliomgm.portfolio(portfolioid) ON DELETE CASCADE,
+ CONSTRAINT orders_stockid_fkey FOREIGN KEY (stockid) REFERENCES
+stockportfoliomgm.stocks(stockid) ON DELETE CASCADE
+);
+CREATE INDEX idx_orders_orderid ON stockportfoliomgm.orders USING btree (orderid);
